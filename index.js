@@ -1,6 +1,9 @@
 const express = require("express")
 const app = express()
 const port = process.env.port || 4001
+const cors = require("cors")
+
+app.use(cors())
 
 const authRoutes = require("./routes/authRoutes")
 const weightRoutes = require("./routes/weightRoutes")
