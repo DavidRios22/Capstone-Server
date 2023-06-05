@@ -2,21 +2,29 @@ const mysql = require("mysql")
 const pool = require("../sql/connection")
 const jwt = require("jsonwebtoken")
 
+function logQuery(sql, values) {
+  console.log("Executing query:", sql)
+  console.log("Query values:", values)
+}
+
+
 const getAllWeights = (req, res) => {
-  let headerValue = req.get("Authorization")
-  let parts = headerValue.split(" ")
-  let signedToken = parts[1]
-  let unsigned = jwt.verify(signedToken, process.env.JWT_SECRET)
-  let userId = unsigned.userId
-
   let sql = "select * from weight where user_id = ?"
+  let user_id = req.params.user_id
 
-  pool.query(sql, userId, (err, results) => {
+  params = [user_id]
+  pool.query(sql, params, (err, results) => {
+    logQuery(sql, params)
     if (err) {
       console.log("getAllWeights query failed ", err)
       res.send(400)
     } else {
-      res.json(results)
+      if (results.length == 0) {
+        console.log("getallweights failed");
+        res.json("no weights at specified userid")
+      } else {
+        res.json(results)
+      }
     }
   })
 }
@@ -49,15 +57,34 @@ const getWeightByDate = (req, res) => {
   })
 }
 
-const logWeighIn = (req, res) => {
-  let headerValue = req.get("Authorization")
-  let parts = headerValue.split(" ")
-  let signedToken = parts[1]
-  let unsigned = jwt.verify(signedToken, process.env.JWT_SECRET)
-  let userId = unsigned.userId
+// const logWeighIn = (req, res) => {
+//   let headerValue = req.get("Authorization")
+//   let parts = headerValue.split(" ")
+//   let signedToken = parts[1]
+//   let unsigned = jwt.verify(signedToken, process.env.JWT_SECRET)
+//   let userId = unsigned.userId
 
+//   let sql = "insert into weight(user_id, weigh_in, weight_lbs) values (?, ?, ?)"
+
+//   let date = req.body.date
+//   let weight = req.body.weight
+
+//   params = [userId, date, weight]
+
+//   pool.query(sql, params, (err, results) => {
+//     if (err) {
+//       console.log("logWeighIn query failed ", err)
+//       res.sendStatus(500)
+//     } else {
+//       res.sendStatus(200)
+//     }
+//   })
+// }
+
+const logWeighIn = (req, res) => {
   let sql = "insert into weight(user_id, weigh_in, weight_lbs) values (?, ?, ?)"
 
+  let userId = req.body.userId
   let date = req.body.date
   let weight = req.body.weight
 
@@ -74,18 +101,21 @@ const logWeighIn = (req, res) => {
 }
 
 const deleteWeighIn = (req, res) => {
-  let headerValue = req.get("Authorization")
-  let parts = headerValue.split(" ")
-  let signedToken = parts[1]
-  let unsigned = jwt.verify(signedToken, process.env.JWT_SECRET)
-  let userId = unsigned.userId
-
-  let sql = "delete from weight where user_id = ? and weigh_in = ?; select @@ROWCOUNT as deletedRows"
-
-  let weigh_in = req.params.weighIn
-
-  params = [userId, weigh_in]
-
+  // let headerValue = req.get("Authorization")
+  // let parts = headerValue.split(" ")
+  // let signedToken = parts[1]
+  // let unsigned = jwt.verify(signedToken, process.env.JWT_SECRET)
+  // let userId = unsigned.userId
+  
+  let sql = "delete from weight where user_id = ? and weigh_in = ? and weight_lbs = ?;"
+  
+  let userId = req.params.user_id
+  let date = req.params.weigh_in
+  let weight = req.params.weight_lbs
+  
+  params = [userId, date, weight]
+  
+  logQuery(sql, params)
   pool.query(sql, params, (err, results) => {
     console.log(results);
     if (err) {

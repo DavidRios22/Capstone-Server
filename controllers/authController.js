@@ -2,6 +2,11 @@ const db = require("../sql/connection")
 let argon2 = require("argon2")
 let jwt = require("jsonwebtoken")
 
+function logQuery(sql, values) {
+  console.log("Executing query:", sql)
+  console.log("Query values:", values)
+}
+
 let register = async (req, res) => {
   let username = req.body.username
   let password = req.body.password
@@ -27,7 +32,7 @@ let register = async (req, res) => {
     res.sendStatus(200)
   } catch (err) {
     console.log(err)
-    res.sendStatus(500)
+    res.status(500).send("Username already exists")
     return
   }
 }
@@ -70,11 +75,11 @@ let login = (req, res) => {
             userId: userId,
           }
           let signedToken = jwt.sign(token, process.env.JWT_SECRET)
-          console.log(signedToken);
 
           // res.setHeader("Authorization", "Bearer", signedToken)
+          let objects = [userId, fName]
 
-          res.sendStatus(200)
+          res.json(objects)
         } else {
           res.sendStatus(400)
         }
@@ -83,4 +88,26 @@ let login = (req, res) => {
   })
 }
 
-module.exports = { register, login }
+let userid = (req,res) => {
+  let sql = "select id, first_name from users where username = ?"
+  let username = req.body.username
+
+  let params = [username]
+
+  db.query(sql, params, (err, results) => {
+    logQuery(sql, params)
+    if (err) {
+      console.log("getuserid query failed ", err)
+      res.send(400)
+    } else {
+      if (results.length == 0) {
+        console.log("getuserid query failed ", err)
+        res.send("No user id at specified user")
+      } else {
+        res.json(results)
+      }
+    }
+})
+}
+
+module.exports = { register, login, userid }
